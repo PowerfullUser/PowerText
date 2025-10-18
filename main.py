@@ -1,3 +1,14 @@
+# File: main.py
+# Purpose: Main application logic for PowerText – a feature-rich text editor
+
+# Copyright 2025 Toshan
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
 # Libraries required to be imported
 from PyQt6.QtWidgets import *
 from PyQt6.QtWebEngineWidgets import *
@@ -506,3 +517,4 @@ window = PowerText()
 window.show()
 window.setGeometry(100, 100, 1000, 600)
 app.exec()
+
