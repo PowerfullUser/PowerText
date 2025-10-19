@@ -20,6 +20,9 @@ from PyQt6.QtWebEngineWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 from PyQt6.QtPrintSupport import QPrinter
+from PyQt6.QtPdf import QPdfDocument
+from PyQt6.QtPdfWidgets import QPdfView
+
 
 import sys
 import os
@@ -29,7 +32,7 @@ name = 'PowerText'
 version = 1
 default_font = 'Calibri'
 default_font_size = 12
-display_name = name + ' ' + str(version)
+display_name = name + ' ' + str(version) + ' Stable'
 
 # Main Class
 class PowerText(QMainWindow):
@@ -61,6 +64,9 @@ class PowerText(QMainWindow):
         # A variable to recall paths from previously opened or saved files
         self.path = {}
 
+        # A variable to open PDFs
+        self.pdf_path = None
+
     # Text Editor Tab
     def text_editor_tab(self):
         # Text Editor
@@ -89,6 +95,11 @@ class PowerText(QMainWindow):
         self.open = QAction(QIcon('Icons/arrow.png'), 'Open', self)
         self.open.triggered.connect(self.open_document)
         self.open.setStatusTip('Open a document within the desired workspace')
+
+        # Open PDF
+        self.open_pdf = QAction(QIcon('Icons/pdf.png'), 'Open PDF', self)
+        self.open_pdf.triggered.connect(self.open_pdf_function)
+        self.open_pdf.setStatusTip('Open a PDF in a new tab')
 
         # Save
         self.save = QAction(QIcon('Icons/save.png'), 'Save', self)
@@ -199,7 +210,7 @@ class PowerText(QMainWindow):
         # Adding the following actions made previously
         self.navigations_toolbar.addAction(self.new_workspace)
         self.navigations_toolbar.addSeparator()
-        self.navigations_toolbar.addActions([self.new, self.open, self.save, self.save_as, self.saveas_pdf])
+        self.navigations_toolbar.addActions([self.new, self.open, self.open_pdf,self.save, self.save_as, self.saveas_pdf])
         self.navigations_toolbar.addSeparator()
         self.navigations_toolbar.addWidget(self.font_box)
         self.navigations_toolbar.addWidget(self.font_size)
@@ -229,32 +240,34 @@ class PowerText(QMainWindow):
 
     # Defining open document
     def open_document(self):
-        path, _ = QFileDialog.getOpenFileName(self, 'Open File', '', 'Text Document (*.txt);;PowerText Document (*.ptxt);;All Files (*.*)')
+        current_editor = self.center.currentWidget()
 
-        if path:
-            try:
-                file_to_read = open(path, 'r', encoding='utf-8').read()
-                current_editor = self.center.currentWidget()
-                self.path[self.center.currentIndex()] = path
+        if isinstance(current_editor, QTextEdit):
+            path, _ = QFileDialog.getOpenFileName(self, 'Open File', '', 'Text Document (*.txt);;PowerText Document (*.ptxt);;All Files (*.*)')
 
-                if isinstance(current_editor, QTextEdit):
+            if path:
+                try:
+                    file_to_read = open(path, 'r', encoding='utf-8').read()
+                    self.path[self.center.currentIndex()] = path
+
                     self.center.setTabText(self.center.currentIndex(), 'File: ' + str(os.path.basename(path)))
                     current_editor.setText(file_to_read)
-            except Exception as e:
-                QMessageBox.warning(self, f'Unable to open document due to:\n{e}')
-        else:
-            pass
+                except Exception as e:
+                    QMessageBox.warning(self, "Open Document Error", f"Unable to open document due to:\n{e}")
+            else:
+                pass
     
     # Defining save as function
     def save_as_document(self):
-        path, _ = QFileDialog.getSaveFileName(self, 'Save File As', '', 'Text File (*.txt);;PowerText Document(*.ptxt);;All Files (*.*)')
+        current_editor = self.center.currentWidget()
 
-        if path:
-            try:
-                self.path[self.center.currentIndex()] = path
-                current_editor = self.center.currentWidget()
+        if isinstance(current_editor, QTextEdit):
+            path, _ = QFileDialog.getSaveFileName(self, 'Save File As', '', 'Text File (*.txt);;PowerText Document(*.ptxt);;All Files (*.*)')
 
-                if isinstance(current_editor, QTextEdit):
+            if path:
+                try:
+                    self.path[self.center.currentIndex()] = path
+
                     with open(path, 'w', encoding='utf-8') as f:
                         if path.endswith('.txt'):
                             f.write(current_editor.toPlainText())
@@ -262,32 +275,35 @@ class PowerText(QMainWindow):
                         else:
                             f.write(current_editor.toHtml())
                             self.center.setTabText(self.center.currentIndex(), 'File: ' + os.path.basename(path))
-            except Exception as e:
-                QMessageBox.warning(self, f'Unable to save document due to:\n{e}')
-        else:
-            pass
+                except Exception as e:
+                    QMessageBox.warning(self, "Save Document Error", f"Unable to open document due to:\n{e}")
+            else:
+                pass
 
     # Defining Save Function
     def save_document(self):
-        index = self.center.currentIndex()
-        path = self.path.get(index)
+        current_editor = self.center.currentWidget()
 
-        if not path:
-            self.save_as_document()
-            return
+        if isinstance(current_editor, QTextEdit):
+            index = self.center.currentIndex()
+            path = self.path.get(index)
 
-        try:
-            current_editor = self.center.currentWidget()
+            if not path:
+                self.save_as_document()
+                return
 
-            if isinstance(current_editor, QTextEdit):
-                with open(path, 'w', encoding='utf-8') as f:
-                    if path.endswith('.txt'):
-                        f.write(current_editor.toPlainText())
-                    else:
-                        f.write(current_editor.toHtml())
-                self.center.setTabText(index, os.path.basename(path))
-        except Exception as e:
-            QMessageBox.warning(self, "Save Error", f"Unable to save document due to:\n{e}")
+            try:
+                current_editor = self.center.currentWidget()
+
+                if isinstance(current_editor, QTextEdit):
+                    with open(path, 'w', encoding='utf-8') as f:
+                        if path.endswith('.txt'):
+                            f.write(current_editor.toPlainText())
+                        else:
+                            f.write(current_editor.toHtml())
+                    self.center.setTabText(index, os.path.basename(path))
+            except Exception as e:
+                QMessageBox.warning(self, "Save Error", f"Unable to save document due to:\n{e}")
 
     # Defining Save As PDF Document function
     def save_as_pdf(self):
@@ -511,6 +527,36 @@ class PowerText(QMainWindow):
                 cursor.mergeCharFormat(highlighter)
             else:
                 pass
+    
+    # Open a PDF Function
+    def open_pdf_function(self):
+        self.required_path, _ = QFileDialog.getOpenFileName(self, 'Open a PDF', '', 'PDF Documents (*.pdf)')
+
+        if self.required_path:
+            self.pdf_path = self.required_path
+            self.pdf_tab()
+        else:
+            pass
+
+    # PDF Viewer Tab
+    def pdf_tab(self):
+        widget = QWidget()
+
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+
+        path = self.pdf_path
+
+        pdf = QPdfDocument(self)
+        viewer = QPdfView(self)
+        viewer.setDocument(pdf)
+        viewer.setPageMode(QPdfView.PageMode.MultiPage)
+        pdf.load(path)
+
+        layout.addWidget(viewer)
+
+        self.center.addTab(widget, 'PDF: ' + str(os.path.basename(path)))
+
 
 
 # Using QApplication as a base for PowerText() to run
@@ -520,7 +566,6 @@ app.setApplicationDisplayName(display_name)
 app.setWindowIcon(QIcon('Icons/ApplicationIcon.ico'))
 window = PowerText()
 window.show()
-window.setGeometry(100, 100, 1000, 600)
+window.setGeometry(100, 100, 1050, 600)
 app.exec()
-
 
