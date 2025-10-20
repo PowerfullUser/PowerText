@@ -1,0 +1,5 @@
+Requirements to run PowerText Source Code
+
+- Download Python 3.12 or higher.
+- Download PyQt6 and PyQt6-WebEngine through pip or anaconda.
+- Make sure all files are organized as in the repository.
